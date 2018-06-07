@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27703.2026
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Http2Sharp", "Http2Sharp\Http2Sharp.csproj", "{3C600447-8801-4E43-8ABB-BDB94EE7EF7E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Http2Sharp", "Http2Sharp\Http2Sharp.csproj", "{3C600447-8801-4E43-8ABB-BDB94EE7EF7E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Http2Sharp.Cli", "Http2Sharp.Cli\Http2Sharp.Cli.csproj", "{5A28EB6C-95F7-4B57-A12C-99C704520A88}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Http2Sharp.Cli", "Http2Sharp.Cli\Http2Sharp.Cli.csproj", "{5A28EB6C-95F7-4B57-A12C-99C704520A88}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Http2Sharp.Test", "Http2Sharp.Test\Http2Sharp.Test.csproj", "{038B9C29-2562-43E3-9238-BC92C12AB434}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{5A28EB6C-95F7-4B57-A12C-99C704520A88}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5A28EB6C-95F7-4B57-A12C-99C704520A88}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5A28EB6C-95F7-4B57-A12C-99C704520A88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{038B9C29-2562-43E3-9238-BC92C12AB434}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{038B9C29-2562-43E3-9238-BC92C12AB434}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{038B9C29-2562-43E3-9238-BC92C12AB434}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{038B9C29-2562-43E3-9238-BC92C12AB434}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

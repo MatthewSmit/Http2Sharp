@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="SonarQube - Http2Sharp Sonar way" ToolsVersion="15.0">
+  <Include Path="..\.sonarlint\http2sharpcsharp.ruleset" Action="Default" />
+</RuleSet>

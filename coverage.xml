@@ -1,0 +1,7 @@
+<AnalyzeParams>
+  <TargetExecutable>C:\Program Files\dotnet\dotnet.exe</TargetExecutable>
+  <TargetArguments>test</TargetArguments>
+  <TargetWorkingDir>.</TargetWorkingDir>
+  <Output>dotCover.html</Output>
+  <ReportType>html</ReportType> 
+</AnalyzeParams>
