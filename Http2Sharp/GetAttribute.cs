@@ -5,7 +5,7 @@ namespace Http2Sharp
     public sealed class GetAttribute : MethodAttribute
     {
         public GetAttribute([NotNull] string path)
-            : base("GET", path)
+            : base(Method.Get, path)
         {
         }
     }

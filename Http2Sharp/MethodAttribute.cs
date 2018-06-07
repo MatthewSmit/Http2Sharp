@@ -3,17 +3,17 @@ using JetBrains.Annotations;
 
 namespace Http2Sharp
 {
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    [MeansImplicitUse]
     public class MethodAttribute : Attribute
     {
-        protected MethodAttribute([NotNull] string method, [NotNull] string path)
+        protected MethodAttribute(Method method, [NotNull] string path)
         {
             Method = method;
             Path = path;
         }
 
-        [NotNull]
-        public string Method { get; set; }
+        public Method Method { get; set; }
 
         [NotNull]
         public string Path { get; set; }

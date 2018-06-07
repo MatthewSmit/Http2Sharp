@@ -5,7 +5,7 @@ namespace Http2Sharp
     public sealed class PatchAttribute : MethodAttribute
     {
         public PatchAttribute([NotNull] string path)
-            : base("PATCH", path)
+            : base(Method.Patch, path)
         {
         }
     }
