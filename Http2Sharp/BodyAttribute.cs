@@ -5,6 +5,7 @@ using JetBrains.Annotations;
 
 namespace Http2Sharp
 {
+    [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class BodyAttribute : BindingAttribute
     {
         private sealed class BodyBinding : Binding

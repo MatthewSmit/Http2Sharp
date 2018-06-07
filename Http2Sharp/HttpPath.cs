@@ -67,14 +67,16 @@ namespace Http2Sharp
 
         protected List<string> SegmentsList { get; } = new List<string>();
         public IReadOnlyList<string> Segments => SegmentsList;
+
+        [NotNull]
+        [ItemNotNull]
         public virtual IEnumerable<Regex> SegmentRegex
         {
             get
             {
                 foreach (var segment in SegmentsList)
                 {
-                    throw new NotImplementedException();
-                    yield return null;
+                    yield return new Regex("^" + Regex.Escape(segment) + "$");
                 }
             }
         }

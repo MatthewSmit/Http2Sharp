@@ -9,7 +9,7 @@ using JetBrains.Annotations;
 
 namespace Http2Sharp
 {
-    internal sealed class HttpClient
+    internal sealed class HttpClient : IDisposable
     {
         private const string METHOD = "(?<method>GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)";
         private const string PCHAR = @"([a-zA-Z0-9\-\._~@:!$&'()\*\+,;=]|%[a-fA-F0-9][a-fA-F0-9])";
@@ -40,11 +40,15 @@ namespace Http2Sharp
             reader = new StreamReader(client.GetStream());
         }
 
-        public TcpClient Client { get; }
-
-        public async Task ReadHeaders()
+        public void Dispose()
         {
-            var startLine = await reader.ReadLineAsync();
+            reader.Dispose();
+            Client.Dispose();
+        }
+
+        public async Task ReadHeadersAsync()
+        {
+            var startLine = await reader.ReadLineAsync().ConfigureAwait(false);
             var startLineMatch = requestLineRegex.Match(startLine);
 
             if (!startLineMatch.Success)
@@ -58,7 +62,7 @@ namespace Http2Sharp
 
             while (true)
             {
-                var headerLine = await reader.ReadLineAsync();
+                var headerLine = await reader.ReadLineAsync().ConfigureAwait(false);
                 if (headerLine.Length == 0)
                 {
                     break;
@@ -70,7 +74,7 @@ namespace Http2Sharp
                     throw new HttpException("Invalid header line: " + headerLine, 400);
                 }
 
-                var name = headerLineMatch.Groups["name"].Value.ToLowerInvariant();
+                var name = headerLineMatch.Groups["name"].Value.ToUpperInvariant();
                 var value = headerLineMatch.Groups["value"].Value;
                 headers.Add((name, value));
             }
@@ -103,7 +107,7 @@ namespace Http2Sharp
             }
         }
 
-        public async Task SendResponse([NotNull] HttpResponse httpResponse)
+        public async Task SendResponseAsync([NotNull] HttpResponse httpResponse)
         {
             var result = new StringBuilder();
             result.Append(HTTP_VERSION + " " + httpResponse.StatusCode + " " + httpResponse.StatusCodeReason + "\r\n");
@@ -117,14 +121,14 @@ namespace Http2Sharp
             var headersData = Encoding.UTF8.GetBytes(result.ToString());
 
             var stream = Client.GetStream();
-            await stream.WriteAsync(headersData, 0, headersData.Length);
+            await stream.WriteAsync(headersData, 0, headersData.Length).ConfigureAwait(false);
             if (httpResponse.Data != null)
             {
-                await stream.WriteAsync(httpResponse.Data, 0, httpResponse.Data.Length);
+                await stream.WriteAsync(httpResponse.Data, 0, httpResponse.Data.Length).ConfigureAwait(false);
             }
         }
 
-        public async Task<object> ReadBody()
+        public async Task<object> ReadBodyAsync()
         {
             switch (Method)
             {
@@ -147,7 +151,7 @@ namespace Http2Sharp
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            return await reader.ReadToEndAsync();
+            return await reader.ReadToEndAsync().ConfigureAwait(false);
         }
 
         private string GetHeader(string headerName)
@@ -162,6 +166,8 @@ namespace Http2Sharp
 
             return null;
         }
+
+        public TcpClient Client { get; }
 
         public IReadOnlyList<(string, string)> Headers => headers;
 

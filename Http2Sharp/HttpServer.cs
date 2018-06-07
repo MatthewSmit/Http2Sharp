@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -15,7 +16,7 @@ namespace Http2Sharp
 
         private TcpListener listener;
         private readonly T baseRouter;
-        private RouteManager routeManager;
+        private readonly RouteManager routeManager;
 
         public HttpServer()
         {
@@ -28,58 +29,56 @@ namespace Http2Sharp
             listener?.Stop();
         }
 
-        public async Task StartListen()
+        public async Task StartListenAsync()
         {
             var endPoint = new IPEndPoint(Address, Port);
             listener = new TcpListener(endPoint);
             listener.Start();
-            logger.Info("Starting http server on " + endPoint);
+            logger.Info(CultureInfo.CurrentCulture, "Starting http server on {0}", endPoint);
 
             while (true)
             {
-                var client = await listener.AcceptTcpClientAsync();
-                logger.Info("Client connected from " + client.Client.RemoteEndPoint);
+                var client = await listener.AcceptTcpClientAsync().ConfigureAwait(false);
+                logger.Info(CultureInfo.CurrentCulture, "Client connected from {0}", client.Client.RemoteEndPoint);
 
-                var httpClient = new HttpClient(client);
-                ProcessClient(httpClient);
+                ProcessClientAsync(client);
             }
         }
 
-        private async Task ProcessClient([NotNull] HttpClient httpClient)
+        private async Task ProcessClientAsync([NotNull] TcpClient client)
         {
-            try
+            using (var httpClient = new HttpClient(client))
             {
-                await httpClient.ReadHeaders();
-                logger.Info($"Message from {httpClient.Client.Client.RemoteEndPoint} for {httpClient.Method} {httpClient.Target}");
+                try
+                {
+                    await httpClient.ReadHeadersAsync().ConfigureAwait(false);
+                    logger.Info(CultureInfo.CurrentCulture, "Message from {0} for {1} {2}", httpClient.Client.Client.RemoteEndPoint, httpClient.Method, httpClient.Target);
 
-                var target = new HttpUri(httpClient.Target);
-                var (method, parameters) = routeManager.GetRoute(httpClient.Method, target);
-                var response = method.Invoke(parameters, target.Queries, await httpClient.ReadBody());
-                await httpClient.SendResponse(response);
-            }
-            catch (HttpException e)
-            {
-                await httpClient.SendResponse(HttpResponse.Status(e.StatusCode));
-            }
-            catch (TargetInvocationException e)
-            {
-                logger.Error(e, "Uncaught exception when running route handler");
-                // TODO: Filter message when not in debug mode
-                await httpClient.SendResponse(HttpResponse.Status(500, e.ToString()));
-            }
-            catch (Exception e)
-            {
-                logger.Error(e, "Uncaught exception when processing connection");
-                await httpClient.SendResponse(HttpResponse.Status(500, e.ToString()));
-                throw;
-            }
-            finally
-            {
-                httpClient.Client.Dispose();
+                    var target = new HttpUri(httpClient.Target);
+                    var (method, parameters) = routeManager.GetRoute(httpClient.Method, target);
+                    var response = method.Invoke(parameters, target.Queries, await httpClient.ReadBodyAsync().ConfigureAwait(false));
+                    await httpClient.SendResponseAsync(response).ConfigureAwait(false);
+                }
+                catch (HttpException e)
+                {
+                    await httpClient.SendResponseAsync(HttpResponse.Status(e.StatusCode)).ConfigureAwait(false);
+                }
+                catch (TargetInvocationException e)
+                {
+                    logger.Error(e, CultureInfo.CurrentCulture, "Uncaught exception when running route handler");
+                    // TODO: Filter message when not in debug mode
+                    await httpClient.SendResponseAsync(HttpResponse.Status(500, e.ToString())).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e, CultureInfo.CurrentCulture, "Uncaught exception when processing connection");
+                    await httpClient.SendResponseAsync(HttpResponse.Status(500, e.ToString())).ConfigureAwait(false);
+                    throw;
+                }
             }
         }
 
         public IPAddress Address { get; set; } = IPAddress.Loopback;
-        public ushort Port { get; set; } = 80;
+        public int Port { get; set; } = 80;
     }
 }

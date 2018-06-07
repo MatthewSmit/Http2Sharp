@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using JetBrains.Annotations;
 
 namespace Http2Sharp
@@ -15,14 +16,9 @@ namespace Http2Sharp
 
         public abstract object Bind([NotNull] Dictionary<string, string> parameters, [NotNull] IEnumerable<(string, string)> queries, [CanBeNull] object body);
 
-        protected object ConvertType(string value)
-        {
-            return Convert.ChangeType(value, type);
-        }
-
         protected object ConvertType(object value)
         {
-            throw new NotImplementedException();
+            return Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
         }
     }
 }

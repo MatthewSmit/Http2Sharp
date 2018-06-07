@@ -7,7 +7,7 @@
             using (var server = new HttpServer<TestServer>())
             {
                 server.Port = 8080;
-                server.StartListen().Wait();
+                server.StartListenAsync().Wait();
             }
         }
     }

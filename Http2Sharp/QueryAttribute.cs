@@ -5,6 +5,7 @@ using JetBrains.Annotations;
 
 namespace Http2Sharp
 {
+    [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class QueryAttribute : BindingAttribute
     {
         private sealed class QueryBinding : Binding
