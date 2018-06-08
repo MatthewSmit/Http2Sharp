@@ -1,4 +1,6 @@
-﻿namespace Http2Sharp.Cli
+﻿using System.Net;
+
+namespace Http2Sharp.Cli
 {
     internal static class Program
     {
@@ -6,8 +8,9 @@
         {
             using (var server = new HttpServer(new TestServer()))
             {
-                server.Port = 8080;
-                server.StartListenAsync().Wait();
+                server.AddListener(new HttpListener(IPAddress.Loopback, 8080));
+                server.StartListen();
+                server.WaitForAll();
             }
         }
     }

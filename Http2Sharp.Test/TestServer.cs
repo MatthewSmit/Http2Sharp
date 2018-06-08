@@ -7,9 +7,16 @@ namespace Http2Sharp.Test
     {
         [NotNull]
         [Get("/")]
-        public HttpResponse GetMain()
+        public HttpResponse Main()
         {
             return HttpResponse.Send("Hello World");
+        }
+
+        [NotNull]
+        [Get("/echo")]
+        public HttpResponse Echo([Query] [NotNull] string value)
+        {
+            return HttpResponse.Send(value);
         }
     }
 }

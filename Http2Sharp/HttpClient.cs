@@ -9,7 +9,7 @@ using JetBrains.Annotations;
 
 namespace Http2Sharp
 {
-    internal sealed class HttpClient : IDisposable
+    internal sealed class HttpClient : IHttpClient
     {
         private const string METHOD = "(?<method>GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)";
         private const string PCHAR = @"([a-zA-Z0-9\-\._~@:!$&'()\*\+,;=]|%[a-fA-F0-9][a-fA-F0-9])";
@@ -33,19 +33,21 @@ namespace Http2Sharp
 
         [NotNull] private readonly StreamReader reader;
         private readonly List<(string, string)> headers = new List<(string, string)>();
+        private readonly TcpClient client;
 
         public HttpClient([NotNull] TcpClient client)
         {
-            Client = client;
+            this.client = client;
             reader = new StreamReader(client.GetStream());
         }
 
         public void Dispose()
         {
             reader.Dispose();
-            Client.Dispose();
+            client.Dispose();
         }
 
+        /// <inheritdoc />
         public async Task ReadHeadersAsync()
         {
             var startLine = await reader.ReadLineAsync().ConfigureAwait(false);
@@ -107,11 +109,46 @@ namespace Http2Sharp
             }
         }
 
-        public async Task SendResponseAsync([NotNull] HttpResponse httpResponse)
+        /// <inheritdoc />
+        public async Task<object> ReadBodyAsync()
+        {
+            if (RequiresBody())
+            {
+                return await reader.ReadToEndAsync().ConfigureAwait(false);
+            }
+            return null;
+        }
+
+        private bool RequiresBody()
+        {
+            switch (Method)
+            {
+                case Method.Get:
+                case Method.Options:
+                    return GetHeader("Content-Length") != null || GetHeader("Transfer-Encoding") != null;
+
+                case Method.Head:
+                case Method.Delete:
+                case Method.Trace:
+                    return false;
+
+                case Method.Post:
+                case Method.Put:
+                case Method.Connect:
+                case Method.Patch:
+                    return true;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task SendResponseAsync([NotNull] HttpResponse response)
         {
             var result = new StringBuilder();
-            result.Append(HTTP_VERSION + " " + httpResponse.StatusCode + " " + httpResponse.StatusCodeReason + "\r\n");
-            foreach (var (headerName, headerValue) in httpResponse.Headers)
+            result.Append(HTTP_VERSION + " " + response.StatusCode + " " + response.StatusCodeReason + "\r\n");
+            foreach (var (headerName, headerValue) in response.Headers)
             {
                 result.Append(headerName + ": " + headerValue + "\r\n");
             }
@@ -120,38 +157,12 @@ namespace Http2Sharp
 
             var headersData = Encoding.UTF8.GetBytes(result.ToString());
 
-            var stream = Client.GetStream();
+            var stream = client.GetStream();
             await stream.WriteAsync(headersData, 0, headersData.Length).ConfigureAwait(false);
-            if (httpResponse.Data != null)
+            if (response.Data != null)
             {
-                await stream.WriteAsync(httpResponse.Data, 0, httpResponse.Data.Length).ConfigureAwait(false);
+                await stream.WriteAsync(response.Data, 0, response.Data.Length).ConfigureAwait(false);
             }
-        }
-
-        public async Task<object> ReadBodyAsync()
-        {
-            switch (Method)
-            {
-                case Method.Get:
-                case Method.Options:
-                    if (GetHeader("Content-Length") == null && GetHeader("Transfer-Encoding") == null)
-                    {
-                        return null;
-                    }
-                    break;
-                case Method.Head:
-                case Method.Delete:
-                case Method.Trace:
-                    return null;
-                case Method.Post:
-                case Method.Put:
-                case Method.Connect:
-                case Method.Patch:
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-            return await reader.ReadToEndAsync().ConfigureAwait(false);
         }
 
         private string GetHeader(string headerName)
@@ -167,14 +178,19 @@ namespace Http2Sharp
             return null;
         }
 
-        public TcpClient Client { get; }
+        /// <inheritdoc />
+        public string RemoteEndPoint => client.Client.RemoteEndPoint.ToString();
 
-        public IReadOnlyList<(string, string)> Headers => headers;
-
+        /// <inheritdoc />
         public Method Method { get; private set; }
 
+        /// <inheritdoc />
         public string Target { get; private set; }
 
+        /// <inheritdoc />
         public string Version { get; private set; }
+
+        /// <inheritdoc />
+        public IReadOnlyList<(string, string)> Headers => headers;
     }
 }

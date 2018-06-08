@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Net;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Xunit;
 
@@ -10,18 +9,15 @@ namespace Http2Sharp.Test
     public sealed class IntegrationTest : IDisposable
     {
         private readonly HttpServer server = new HttpServer(new TestServer());
-        private readonly Task serverTask;
 
         public IntegrationTest()
         {
-            server.Port = 8080;
-            serverTask = server.StartListenAsync();
+            server.StartListen();
         }
 
         public void Dispose()
         {
             server.Dispose();
-            serverTask.Wait();
         }
 
         [Fact]
@@ -29,6 +25,26 @@ namespace Http2Sharp.Test
         {
             var result = SendRequest("GET", "http://localhost:8080/");
             Assert.Equal("Hello World", result);
+        }
+
+        [Fact]
+        public void TestGetEcho()
+        {
+            var result = SendRequest("GET", "http://localhost:8080/echo?value=TEST");
+            Assert.Equal("TEST", result);
+        }
+
+        [Fact]
+        public void TestBad()
+        {
+            var exception = Record.Exception(() =>
+            {
+                SendRequest("GET", "http://localhost:8080/not-found");
+            });
+            Assert.IsType<WebException>(exception);
+
+            var response = (HttpWebResponse)((WebException)exception).Response;
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
         [NotNull]
