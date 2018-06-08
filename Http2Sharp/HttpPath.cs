@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 
 namespace Http2Sharp
 {
-    public class HttpPath
+    internal class HttpPath
     {
         protected HttpPath()
         {

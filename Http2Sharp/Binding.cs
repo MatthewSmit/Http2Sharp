@@ -14,7 +14,7 @@ namespace Http2Sharp
             this.type = type;
         }
 
-        public abstract object Bind([NotNull] Dictionary<string, string> parameters, [NotNull] IEnumerable<(string, string)> queries, [CanBeNull] object body);
+        public abstract object Bind([NotNull] IReadOnlyDictionary<string, string> parameters, [NotNull] IReadOnlyList<(string, string)> queries, [CanBeNull] object body);
 
         protected object ConvertType(object value)
         {

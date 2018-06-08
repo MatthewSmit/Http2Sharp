@@ -16,7 +16,7 @@ namespace Http2Sharp
             }
 
             /// <inheritdoc />
-            public override object Bind(Dictionary<string, string> parameters, IEnumerable<(string, string)> queries, object body)
+            public override object Bind(IReadOnlyDictionary<string, string> parameters, IReadOnlyList<(string, string)> queries, object body)
             {
                 return ConvertType(body);
             }

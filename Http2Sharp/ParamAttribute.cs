@@ -5,6 +5,7 @@ using JetBrains.Annotations;
 
 namespace Http2Sharp
 {
+    [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class ParamAttribute : BindingAttribute
     {
         private sealed class ParamBinding : Binding
@@ -18,7 +19,7 @@ namespace Http2Sharp
             }
 
             /// <inheritdoc />
-            public override object Bind(Dictionary<string, string> parameters, IEnumerable<(string, string)> queries, object body)
+            public override object Bind(IReadOnlyDictionary<string, string> parameters, IReadOnlyList<(string, string)> queries, object body)
             {
                 return ConvertType(parameters[name]);
             }
