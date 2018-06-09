@@ -10,6 +10,9 @@ namespace Http2Sharp
     [AttributeUsage(AttributeTargets.Parameter)]
     public abstract class BindingAttribute : Attribute
     {
+        /// <summary>
+        /// Creates a binding class for this attribute.
+        /// </summary>
         [NotNull] internal abstract Binding CreateBinding([NotNull] ParameterInfo parameterInfo);
     }
 }

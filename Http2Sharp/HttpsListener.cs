@@ -38,10 +38,5 @@ namespace Http2Sharp
             stream.AuthenticateAsServer(serverCertificate, false, SslProtocols.Tls12, true);
             return new HttpClient(client, stream);
         }
-
-//        public byte[] Certificate { get; }
-//        public byte[] Key { get; }
-//        public IReadOnlyList<ProtocolVersion> SupportedProtocolVersions { get; }
-//        public IReadOnlyList<CipherSuite> SupportedCipherSuites { get; }
     }
 }

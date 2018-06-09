@@ -1,10 +1,14 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Http2Sharp
 {
+    /// <summary>
+    /// Handles reading both line information and raw bytes from a stream.
+    /// </summary>
     internal sealed class HttpReader
     {
         private const int BLOCK_SIZE = 1024;
@@ -22,15 +26,17 @@ namespace Http2Sharp
 
         public async Task ReadAsync(byte[] data, int offset, int length)
         {
-            await EnsureBlockAsync().ConfigureAwait(false);
-            if (blockSize - blockPointer >= length)
+            var remaining = length;
+            while (remaining > 0)
             {
-                Array.Copy(block, blockPointer, data, offset, length);
-                blockPointer += length;
-            }
-            else
-            {
-                throw new NotImplementedException();
+                await EnsureBlockAsync().ConfigureAwait(false);
+
+                var dataAvaliable = blockSize - blockPointer;
+                var toRead = Math.Min(dataAvaliable, remaining);
+                Array.Copy(block, blockPointer, data, offset, toRead);
+                blockPointer += toRead;
+                offset += toRead;
+                remaining -= toRead;
             }
         }
 
@@ -46,34 +52,28 @@ namespace Http2Sharp
                     var value = block[blockPointer];
                     if (value == '\r')
                     {
-                        if (blockPointer + 1 >= blockSize)
+                        blockPointer += 1;
+                        if (blockPointer >= blockSize)
                         {
-                            throw new NotImplementedException();
+                            await EnsureBlockAsync().ConfigureAwait(false);
                         }
-                        else
-                        {
-                            if (block[blockPointer + 1] != '\n')
-                            {
-                                throw new NotImplementedException();
-                            }
-                            else
-                            {
-                                blockPointer += 2;
-                                return result.ToString();
-                            }
-                        }
-                    }
-                    else if (value >= 0x80)
-                    {
-                        throw new NotImplementedException();
-                    }
-                    else
-                    {
-                        result.Append((char)value);
-                    }
-                }
 
-                throw new NotImplementedException();
+                        if (block[blockPointer] != '\n')
+                        {
+                            throw new HttpException("Missing a \\r\\n in the http line", HttpStatusCode.BadRequest);
+                        }
+
+                        blockPointer += 1;
+                        return result.ToString();
+                    }
+
+                    if (value >= 0x80)
+                    {
+                        throw new IOException("Invalid HTTP data.");
+                    }
+
+                    result.Append((char)value);
+                }
             }
         }
 
@@ -82,6 +82,10 @@ namespace Http2Sharp
             if (blockPointer >= blockSize)
             {
                 blockSize = await stream.ReadAsync(block, 0, BLOCK_SIZE).ConfigureAwait(false);
+                if (blockSize == 0)
+                {
+                    throw new IOException("No data avaliable to read.");
+                }
                 blockPointer = 0;
             }
         }

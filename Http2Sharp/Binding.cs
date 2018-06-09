@@ -9,9 +9,6 @@ namespace Http2Sharp
     /// </summary>
     internal abstract class Binding
     {
-        /// <summary>
-        /// The required type of the object.
-        /// </summary>
         [NotNull] private readonly Type type;
 
         protected Binding([NotNull] Type type)
@@ -19,6 +16,9 @@ namespace Http2Sharp
             this.type = type;
         }
 
+        /// <summary>
+        /// Gets the required information from the HttpRequest and returns an object.
+        /// </summary>
         public abstract object Bind([NotNull] HttpRequest request);
 
         protected object ConvertType(object value)
@@ -26,6 +26,9 @@ namespace Http2Sharp
             return Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
         }
 
+        /// <summary>
+        /// The required type of the object.
+        /// </summary>
         [NotNull]
         protected Type ParameterType => type;
     }

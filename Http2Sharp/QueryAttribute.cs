@@ -24,7 +24,7 @@ namespace Http2Sharp
             {
                 foreach (var (queryName, queryValue) in request.Queries)
                 {
-                    if (string.Equals(queryName, name))
+                    if (string.Equals(queryName, name, StringComparison.InvariantCulture))
                     {
                         return ConvertType(queryValue);
                     }
