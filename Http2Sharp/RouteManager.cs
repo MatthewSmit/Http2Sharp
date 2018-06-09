@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using JetBrains.Annotations;
 
@@ -48,44 +48,38 @@ namespace Http2Sharp
         [UsedImplicitly]
         private HttpResponse BadRoute()
         {
-            return HttpResponse.Status(404);
+            return HttpResponse.Status(HttpStatusCode.NotFound);
         }
 
-        [Pure]
-        public (RouteMethod, Dictionary<string, string>) GetRoute(Method method, [NotNull] Uri route)
-        {
-            return GetRoute(method, route.Segments);
-        }
-
-        [Pure]
-        private (RouteMethod, Dictionary<string, string>) GetRoute(Method method, [NotNull] IReadOnlyList<string> routeSegments)
+        [NotNull]
+        public RouteMethod GetRoute([NotNull] HttpRequest request)
         {
             var currentRoute = baseRoute;
-            var parameters = new Dictionary<string, string>();
+            var routeSegments = request.Target.Segments;
 
-            if (routeSegments.Count == 0 || routeSegments[0] != "/")
+            if (routeSegments.Length == 0 || routeSegments[0] != "/")
             {
-                throw new ArgumentException();
+                throw new ArgumentException("Not a valid http route");
             }
 
-            for (var i = 1; i < routeSegments.Count; i++)
+            for (var i = 1; i < routeSegments.Length; i++)
             {
                 var segment = routeSegments[i];
                 if (segment.EndsWith('/'))
                 {
                     segment = segment.Remove(segment.Length - 1);
                 }
-                var childRoute = currentRoute.GetRoute(segment, parameters);
+                var childRoute = currentRoute.GetRoute(segment, request.Parameters);
                 if (childRoute == null)
                 {
-                    return (badRoute, parameters);
+                    return badRoute;
                 }
 
                 currentRoute = childRoute;
             }
 
-            var routeMethod = currentRoute.GetMethod(method);
-            return (routeMethod ?? badRoute, parameters);
+            var routeMethod = currentRoute.GetMethod(request.Method);
+            return routeMethod ?? badRoute;
         }
     }
 }

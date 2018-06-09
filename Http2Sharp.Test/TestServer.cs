@@ -18,5 +18,12 @@ namespace Http2Sharp.Test
         {
             return HttpResponse.Send(value);
         }
+
+        [NotNull]
+        [Post("/post")]
+        public HttpResponse Post([Body] [NotNull] User user)
+        {
+            return HttpResponse.Send(user);
+        }
     }
 }

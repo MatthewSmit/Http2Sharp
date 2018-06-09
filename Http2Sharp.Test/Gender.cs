@@ -1,6 +1,6 @@
-﻿namespace Http2Sharp.Cli
+﻿namespace Http2Sharp.Test
 {
-    internal enum Gender
+    public enum Gender
     {
         Male,
         Female,

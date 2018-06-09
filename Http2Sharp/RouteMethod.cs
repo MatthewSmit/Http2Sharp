@@ -26,12 +26,12 @@ namespace Http2Sharp
             }
         }
 
-        public HttpResponse Invoke([NotNull] IReadOnlyDictionary<string, string> parameters, [NotNull] IReadOnlyList<(string, string)> queries, [CanBeNull] object body)
+        public HttpResponse Invoke([NotNull] HttpRequest request)
         {
             var arguments = new object[bindings.Length];
             for (var i = 0; i < bindings.Length; i++)
             {
-                arguments[i] = bindings[i].Bind(parameters, queries, body);
+                arguments[i] = bindings[i].Bind(request);
             }
 
             return (HttpResponse)method.Invoke(instance, arguments);

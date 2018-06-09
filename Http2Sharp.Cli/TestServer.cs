@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using Http2Sharp.Test;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 
@@ -30,22 +32,24 @@ namespace Http2Sharp.Cli
             return HttpResponse.Send("Hello " + name);
         }
 
+        [NotNull]
         [Get("/user/{id:\\d+}")]
         public HttpResponse User([Param] int id)
         {
             if (id < 0 || id >= users.Count)
             {
-                return HttpResponse.Status(400);
+                return HttpResponse.Status(HttpStatusCode.BadRequest);
             }
             return HttpResponse.Send(users[id]);
         }
 
+        [NotNull]
         [Post("/user/{id:\\d+}")]
         public HttpResponse PostUser([Param] int id, [Body] User user)
         {
             if (id < 0 || id >= users.Count)
             {
-                return HttpResponse.Status(400);
+                return HttpResponse.Status(HttpStatusCode.BadRequest);
             }
 
             users[id] = user;
@@ -55,7 +59,7 @@ namespace Http2Sharp.Cli
         [Get("/exception")]
         public HttpResponse Exception()
         {
-            throw new NotImplementedException("This is a test message");
+            throw new NotSupportedException("This is a test message");
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Reflection;
 using JetBrains.Annotations;
 
@@ -21,9 +20,9 @@ namespace Http2Sharp
             }
 
             /// <inheritdoc />
-            public override object Bind(IReadOnlyDictionary<string, string> parameters, IReadOnlyList<(string, string)> queries, object body)
+            public override object Bind(HttpRequest request)
             {
-                foreach (var (queryName, queryValue) in queries)
+                foreach (var (queryName, queryValue) in request.Queries)
                 {
                     if (string.Equals(queryName, name))
                     {

@@ -7,7 +7,7 @@ namespace Http2Sharp
     public interface IHttpClient : IDisposable
     {
         Task ReadHeadersAsync();
-        Task<object> ReadBodyAsync();
+        Task<byte[]> ReadBodyAsync();
 
         Task SendResponseAsync(HttpResponse response);
 

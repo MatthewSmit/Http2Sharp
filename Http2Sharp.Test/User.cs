@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Http2Sharp.Cli
+namespace Http2Sharp.Test
 {
-    internal sealed class User
+    public sealed class User
     {
         public Gender Gender { get; set; }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -79,9 +80,10 @@ namespace Http2Sharp
                     logger.Info(CultureInfo.CurrentCulture, "Message from {0} for {1} {2}", client.RemoteEndPoint, client.Method, client.Target);
 
                     var target = new Uri(client.Target, UriKind.Relative).MakeAbsolute();
-                    var (method, parameters) = routeManager.GetRoute(client.Method, target);
-                    var queries = target.SplitQueries();
-                    var response = method.Invoke(parameters, queries, await client.ReadBodyAsync().ConfigureAwait(false));
+                    var request = new HttpRequest(client.Method, target, client.Headers);
+                    var method = routeManager.GetRoute(request);
+                    request.Body = await client.ReadBodyAsync().ConfigureAwait(false);
+                    var response = method.Invoke(request);
                     await client.SendResponseAsync(response).ConfigureAwait(false);
                 }
                 catch (HttpException e)
@@ -92,12 +94,12 @@ namespace Http2Sharp
                 {
                     logger.Error(e, CultureInfo.CurrentCulture, "Uncaught exception when running route handler");
                     // TODO: Filter message when not in debug mode
-                    await client.SendResponseAsync(HttpResponse.Status(500, e.ToString())).ConfigureAwait(false);
+                    await client.SendResponseAsync(HttpResponse.Status(HttpStatusCode.InternalServerError, e.ToString())).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
                     logger.Error(e, CultureInfo.CurrentCulture, "Uncaught exception when processing connection");
-                    await client.SendResponseAsync(HttpResponse.Status(500, e.ToString())).ConfigureAwait(false);
+                    await client.SendResponseAsync(HttpResponse.Status(HttpStatusCode.InternalServerError, e.ToString())).ConfigureAwait(false);
                     throw;
                 }
             }

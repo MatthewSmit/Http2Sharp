@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using Http2Sharp.Test;
 
 namespace Http2Sharp.Cli
 {
@@ -7,6 +8,11 @@ namespace Http2Sharp.Cli
     {
         private static void Main()
         {
+            using (var test = new IntegrationTest())
+            {
+                test.TestPost();
+                return;
+            }
             using (var server = new HttpServer(new TestServer()))
             {
                 server.AddListener(new HttpListener(IPAddress.Loopback, 8080));

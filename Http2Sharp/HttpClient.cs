@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Net;
+using System.Net.Mime;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Optional;
+using Optional.Unsafe;
 
 namespace Http2Sharp
 {
@@ -17,10 +22,7 @@ namespace Http2Sharp
         private const string QUERY = "(" + PCHAR + "|/|\\?)*";
         private const string ABSOLUTE_PATH = "(/" + SEGMENT + ")+";
         private const string ORIGIN_FORM = ABSOLUTE_PATH + @"(\?" + QUERY + ")?";
-//        private const string ABSOLUTE_FORM = @"";
-//        private const string AUTHORITY_FORM = @"";
-//        private const string ASTERISK_FORM = @"\*";
-        private const string REQUEST_TARGET = "(?<target>" + ORIGIN_FORM/* + "|" + ABSOLUTE_FORM + "|" + AUTHORITY_FORM + "|" + ASTERISK_FORM*/ + ")";
+        private const string REQUEST_TARGET = "(?<target>" + ORIGIN_FORM + ")";
         private const string HTTP_VERSION_REGEX = @"(?<version>HTTP/\d\.\d)";
 
         private const string FIELD_NAME = @"[!#$%&'\*\+\-\.^_`\|~a-zA-Z0-9]+";
@@ -31,29 +33,30 @@ namespace Http2Sharp
 
         private const string HTTP_VERSION = "HTTP/1.1";
 
-        [NotNull] private readonly StreamReader reader;
+        [NotNull] private readonly HttpReader reader;
         private readonly List<(string, string)> headers = new List<(string, string)>();
         private readonly TcpClient client;
         private readonly Stream stream;
+
+        private Option<long> contentLength;
 
         public HttpClient([NotNull] TcpClient client, [NotNull] Stream stream)
         {
             this.client = client;
             this.stream = stream;
-            reader = new StreamReader(stream);
+            reader = new HttpReader(stream);
         }
 
         public HttpClient([NotNull] TcpClient client)
         {
             this.client = client;
             stream = client.GetStream();
-            reader = new StreamReader(stream);
+            reader = new HttpReader(stream);
         }
 
         public void Dispose()
         {
             stream.Dispose();
-            reader.Dispose();
             client.Dispose();
         }
 
@@ -65,7 +68,7 @@ namespace Http2Sharp
 
             if (!startLineMatch.Success)
             {
-                throw new HttpException("Invalid start line: " + startLine, 400);
+                throw new HttpException("Invalid start line: " + startLine, HttpStatusCode.BadRequest);
             }
 
             Method = ParseMethod(startLineMatch.Groups["method"].Value);
@@ -83,12 +86,31 @@ namespace Http2Sharp
                 var headerLineMatch = headerLineRegex.Match(headerLine);
                 if (!headerLineMatch.Success)
                 {
-                    throw new HttpException("Invalid header line: " + headerLine, 400);
+                    throw new HttpException("Invalid header line: " + headerLine, HttpStatusCode.BadRequest);
                 }
 
                 var name = headerLineMatch.Groups["name"].Value.ToUpperInvariant();
                 var value = headerLineMatch.Groups["value"].Value;
+
+                ProcessSpecialHeader(name, value);
                 headers.Add((name, value));
+            }
+        }
+
+        private void ProcessSpecialHeader([NotNull] string name, [NotNull] string value)
+        {
+            if (string.Equals(name, "Transfer-Encoding", StringComparison.InvariantCultureIgnoreCase))
+            {
+                throw new NotImplementedException();
+            }
+            else if (string.Equals(name, "Content-Length", StringComparison.InvariantCultureIgnoreCase))
+            {
+                if (!long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var result))
+                {
+                    throw new HttpException("Invalid Content-Length", HttpStatusCode.BadRequest);
+                }
+
+                contentLength = Option.Some(result);
             }
         }
 
@@ -115,16 +137,34 @@ namespace Http2Sharp
                 case "PATCH":
                     return Method.Patch;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("Unknown or invalid HTTP method " + value);
             }
         }
 
         /// <inheritdoc />
-        public async Task<object> ReadBodyAsync()
+        [ItemCanBeNull]
+        public async Task<byte[]> ReadBodyAsync()
         {
             if (RequiresBody())
             {
-                return await reader.ReadToEndAsync().ConfigureAwait(false);
+                // TODO: Read Transfer-Encoding first
+
+                if (contentLength.HasValue)
+                {
+                    var contentLengthValue = contentLength.ValueOrFailure();
+                    if (contentLengthValue == 0)
+                    {
+                        return null;
+                    }
+
+                    var data = new byte[contentLengthValue];
+                    await reader.ReadAsync(data, 0, data.Length).ConfigureAwait(false);
+                    return data;
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
             }
             return null;
         }
@@ -135,7 +175,7 @@ namespace Http2Sharp
             {
                 case Method.Get:
                 case Method.Options:
-                    return GetHeader("Content-Length") != null || GetHeader("Transfer-Encoding") != null;
+                    return contentLength.HasValue || GetHeader("Transfer-Encoding") != null;
 
                 case Method.Head:
                 case Method.Delete:
@@ -149,7 +189,7 @@ namespace Http2Sharp
                     return true;
 
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("Unknown or invalid HTTP method " + Method);
             }
         }
 
@@ -157,7 +197,7 @@ namespace Http2Sharp
         public async Task SendResponseAsync([NotNull] HttpResponse response)
         {
             var result = new StringBuilder();
-            result.Append(HTTP_VERSION + " " + response.StatusCode + " " + response.StatusCodeReason + "\r\n");
+            result.Append(HTTP_VERSION + " " + (int)response.StatusCode + " " + response.StatusCodeReason + "\r\n");
             foreach (var (headerName, headerValue) in response.Headers)
             {
                 result.Append(headerName + ": " + headerValue + "\r\n");
