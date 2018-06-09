@@ -20,10 +20,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Http2Sharp.Test\Http2Sharp.Test.csproj" />
     <ProjectReference Include="..\Http2Sharp\Http2Sharp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="key.pfx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="userData.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

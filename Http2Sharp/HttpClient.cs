@@ -34,15 +34,25 @@ namespace Http2Sharp
         [NotNull] private readonly StreamReader reader;
         private readonly List<(string, string)> headers = new List<(string, string)>();
         private readonly TcpClient client;
+        private readonly Stream stream;
+
+        public HttpClient([NotNull] TcpClient client, [NotNull] Stream stream)
+        {
+            this.client = client;
+            this.stream = stream;
+            reader = new StreamReader(stream);
+        }
 
         public HttpClient([NotNull] TcpClient client)
         {
             this.client = client;
-            reader = new StreamReader(client.GetStream());
+            stream = client.GetStream();
+            reader = new StreamReader(stream);
         }
 
         public void Dispose()
         {
+            stream.Dispose();
             reader.Dispose();
             client.Dispose();
         }
@@ -157,7 +167,6 @@ namespace Http2Sharp
 
             var headersData = Encoding.UTF8.GetBytes(result.ToString());
 
-            var stream = client.GetStream();
             await stream.WriteAsync(headersData, 0, headersData.Length).ConfigureAwait(false);
             if (response.Data != null)
             {

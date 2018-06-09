@@ -47,12 +47,13 @@ namespace Http2Sharp
             {
                 while (true)
                 {
+                    TcpClient client = null;
                     try
                     {
-                        var client = listener.AcceptTcpClient();
+                        client = listener.AcceptTcpClient();
                         Logger.Info(CultureInfo.CurrentCulture, "Client connected to {0} from {1}", endPoint, client.Client.RemoteEndPoint);
 
-                        processClient(new HttpClient(client));
+                        processClient(CreateClient(client));
                     }
                     catch (SocketException e)
                     {
@@ -61,10 +62,23 @@ namespace Http2Sharp
                         {
                             return;
                         }
-                        throw;
+
+                        Logger.Error(e, CultureInfo.CurrentCulture, "Uncaught exception when processing connection");
+                        client?.Dispose();
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error(e, CultureInfo.CurrentCulture, "Uncaught exception when processing connection");
+                        client?.Dispose();
                     }
                 }
             }, taskFactory.CancellationToken);
+        }
+
+        [NotNull]
+        protected virtual IHttpClient CreateClient([NotNull] TcpClient client)
+        {
+            return new HttpClient(client);
         }
     }
 }
