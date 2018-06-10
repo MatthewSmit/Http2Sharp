@@ -13,8 +13,8 @@ namespace Http2Sharp
         [NotNull] private readonly X509Certificate serverCertificate;
 
         /// <inheritdoc />
-        public HttpsListener([NotNull] IPAddress address, int port, [NotNull] X509Certificate certificate)
-            : base(address, port)
+        public HttpsListener([NotNull] IServerConfiguration serverConfiguration, [NotNull] IPAddress address, int port, [NotNull] X509Certificate certificate)
+            : base(serverConfiguration, address, port)
         {
             serverCertificate = certificate;
         }
@@ -36,7 +36,7 @@ namespace Http2Sharp
 
             var stream = new SslStream(client.GetStream());
             stream.AuthenticateAsServer(serverCertificate, false, SslProtocols.Tls12, true);
-            return new HttpClient(client, stream);
+            return new HttpClient(ServerConfiguration, client, stream);
         }
     }
 }

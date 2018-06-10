@@ -10,7 +10,7 @@ using NLog;
 
 namespace Http2Sharp
 {
-    public sealed class HttpServer : IDisposable
+    public sealed class HttpServer : IDisposable, IServerConfiguration
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -83,8 +83,10 @@ namespace Http2Sharp
                     var request = new HttpRequest(client.Method, target, client.Headers);
                     var method = routeManager.GetRoute(request);
                     request.Body = await client.ReadBodyAsync().ConfigureAwait(false);
-                    var response = method.Invoke(request);
-                    await client.SendResponseAsync(response).ConfigureAwait(false);
+                    using (var response = method.Invoke(request))
+                    {
+                        await client.SendResponseAsync(response).ConfigureAwait(false);
+                    }
                 }
                 catch (HttpException e)
                 {
@@ -104,5 +106,8 @@ namespace Http2Sharp
                 }
             }
         }
+
+        /// <inheritdoc />
+        public string ServerName => "HTTP2#/0.1";
     }
 }

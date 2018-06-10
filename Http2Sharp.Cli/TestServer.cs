@@ -26,6 +26,13 @@ namespace Http2Sharp.Cli
         }
 
         [NotNull]
+        [Get("/favicon.ico")]
+        public HttpResponse FavIcon()
+        {
+            return HttpResponse.SendFile("data/favicon.ico");
+        }
+
+        [NotNull]
         [Get("/hello")]
         public HttpResponse Hello([Query(Default = "Bob")] string name)
         {

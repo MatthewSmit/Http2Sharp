@@ -34,20 +34,23 @@ namespace Http2Sharp
 
         [NotNull] private readonly HttpReader reader;
         private readonly List<(string, string)> headers = new List<(string, string)>();
+        private readonly IServerConfiguration serverConfiguration;
         private readonly TcpClient client;
         private readonly Stream stream;
 
         private Option<long> contentLength;
 
-        public HttpClient([NotNull] TcpClient client, [NotNull] Stream stream)
+        public HttpClient([NotNull] IServerConfiguration serverConfiguration, [NotNull] TcpClient client, [NotNull] Stream stream)
         {
+            this.serverConfiguration = serverConfiguration;
             this.client = client;
             this.stream = stream;
             reader = new HttpReader(stream);
         }
 
-        public HttpClient([NotNull] TcpClient client)
+        public HttpClient([NotNull] IServerConfiguration serverConfiguration, [NotNull] TcpClient client)
         {
+            this.serverConfiguration = serverConfiguration;
             this.client = client;
             stream = client.GetStream();
             reader = new HttpReader(stream);
@@ -195,6 +198,11 @@ namespace Http2Sharp
         /// <inheritdoc />
         public async Task SendResponseAsync([NotNull] HttpResponse response)
         {
+            if (!response.ContainsHeader("SERVER"))
+            {
+                response.AddHeader("SERVER", serverConfiguration.ServerName);
+            }
+
             var result = new StringBuilder();
             result.Append(HTTP_VERSION + " " + (int)response.StatusCode + " " + response.StatusCodeReason + "\r\n");
             foreach (var (headerName, headerValue) in response.Headers)
@@ -207,9 +215,9 @@ namespace Http2Sharp
             var headersData = Encoding.UTF8.GetBytes(result.ToString());
 
             await stream.WriteAsync(headersData, 0, headersData.Length).ConfigureAwait(false);
-            if (response.Data != null)
+            if (response.DataStream != null)
             {
-                await stream.WriteAsync(response.Data, 0, response.Data.Length).ConfigureAwait(false);
+                await response.DataStream.CopyToAsync(stream).ConfigureAwait(false);
             }
         }
 

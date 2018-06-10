@@ -52,7 +52,9 @@ namespace Http2Sharp
                     case ';':
                     case '=':
                         builder.Append(path[i]);
-                        throw new NotImplementedException();
+                        regexBuilder.Append('\\');
+                        regexBuilder.Append(path[i]);
+                        break;
 
                     case '{':
                         ReadParameter(ref i, path, builder, regexBuilder);

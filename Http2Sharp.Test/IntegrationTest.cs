@@ -16,7 +16,7 @@ namespace Http2Sharp.Test
 
         public IntegrationTest()
         {
-            server.AddListener(new HttpListener(IPAddress.Loopback, 8080));
+            server.AddListener(new HttpListener(server, IPAddress.Loopback, 8080));
             server.StartListen();
         }
 

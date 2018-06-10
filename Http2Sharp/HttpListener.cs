@@ -15,8 +15,9 @@ namespace Http2Sharp
         private readonly IPEndPoint endPoint;
         private TcpListener listener;
 
-        public HttpListener([NotNull] IPAddress address, int port)
+        public HttpListener([NotNull] IServerConfiguration serverConfiguration, [NotNull] IPAddress address, int port)
         {
+            ServerConfiguration = serverConfiguration;
             endPoint = new IPEndPoint(address, port);
         }
 
@@ -78,7 +79,10 @@ namespace Http2Sharp
         [NotNull]
         protected virtual IHttpClient CreateClient([NotNull] TcpClient client)
         {
-            return new HttpClient(client);
+            return new HttpClient(ServerConfiguration, client);
         }
+
+        [NotNull]
+        public IServerConfiguration ServerConfiguration { get; }
     }
 }

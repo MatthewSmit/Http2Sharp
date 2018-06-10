@@ -13,7 +13,7 @@ namespace Http2Sharp.Test
 
         public HttpsTest()
         {
-            server.AddListener(new HttpsListener(IPAddress.Loopback, 8081, new X509Certificate2("key.pfx")));
+            server.AddListener(new HttpsListener(server, IPAddress.Loopback, 8081, new X509Certificate2("key.pfx")));
             server.StartListen();
         }
 

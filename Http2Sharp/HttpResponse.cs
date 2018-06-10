@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Text;
 using JetBrains.Annotations;
@@ -8,7 +9,7 @@ using Newtonsoft.Json;
 
 namespace Http2Sharp
 {
-    public sealed class HttpResponse
+    public sealed class HttpResponse : IDisposable
     {
         [NotNull] private static readonly IReadOnlyDictionary<HttpStatusCode, string> statusCodeReasons = new Dictionary<HttpStatusCode, string>
         {
@@ -65,33 +66,67 @@ namespace Http2Sharp
         };
 
         [NotNull] private readonly Dictionary<string, string> headers = new Dictionary<string, string>();
+        private readonly bool leaveStreamOpen;
 
         private HttpResponse(HttpStatusCode statusCode, [CanBeNull] string mimeType, [CanBeNull] byte[] data)
+            : this(statusCode, mimeType, data == null ? null : new MemoryStream(data), false)
+        {
+        }
+
+        private HttpResponse(HttpStatusCode statusCode, [CanBeNull] string mimeType, [CanBeNull] Stream dataStream, bool leaveStreamOpen)
         {
             StatusCode = statusCode;
 
-            if (mimeType != null && data == null ||
-                mimeType == null && data != null)
+            if (mimeType != null && dataStream == null)
             {
-                throw new ArgumentException("Must provide a mime type if and only if providing data");
+                throw new ArgumentException("Must provide data if a mime type is provided");
             }
+
+            headers["DATE"] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
 
             if (mimeType != null)
             {
-                headers["Content-Type"] = mimeType;
+                headers["CONTENT-TYPE"] = mimeType;
             }
 
-            if (data != null)
+            if (dataStream != null)
             {
-                headers["Content-Length"] = data.Length.ToString(CultureInfo.InvariantCulture);
+                headers["CONTENT-LENGTH"] = dataStream.Length.ToString(CultureInfo.InvariantCulture);
             }
-            Data = data;
+            DataStream = dataStream;
+            this.leaveStreamOpen = leaveStreamOpen;
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (!leaveStreamOpen)
+            {
+                DataStream?.Dispose();
+            }
+        }
+
+        public bool ContainsHeader([NotNull] string name)
+        {
+            return headers.ContainsKey(name);
         }
 
         [NotNull]
         public static HttpResponse Send<T>([NotNull] T value)
         {
             return Status(HttpStatusCode.OK, value);
+        }
+
+        [NotNull]
+        public static HttpResponse SendFile([NotNull] string filePath, [CanBeNull] string mimeType = null)
+        {
+            var fileInfo = new FileInfo(filePath);
+            if (mimeType == null)
+            {
+                mimeType = MimeTypes.FindFromExtension(fileInfo.Extension);
+            }
+
+            return new HttpResponse(HttpStatusCode.OK, mimeType, fileInfo.OpenRead(), false);
         }
 
         [NotNull]
@@ -116,7 +151,7 @@ namespace Http2Sharp
         public IReadOnlyDictionary<string, string> Headers => headers;
 
         [CanBeNull]
-        public byte[] Data { get; }
+        public Stream DataStream { get; }
 
         public HttpStatusCode StatusCode { get; }
 
@@ -132,6 +167,16 @@ namespace Http2Sharp
 
                 return StatusCode.ToString();
             }
+        }
+
+        public void AddHeader([NotNull] string headerName, [NotNull] string headerValue)
+        {
+            if (headerName == null)
+            {
+                throw new ArgumentNullException(nameof(headerName));
+            }
+
+            headers[headerName.ToUpperInvariant()] = headerValue;
         }
     }
 }
