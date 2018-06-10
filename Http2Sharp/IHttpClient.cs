@@ -1,20 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 namespace Http2Sharp
 {
     public interface IHttpClient : IDisposable
     {
-        Task ReadHeadersAsync();
-        Task<byte[]> ReadBodyAsync();
+        Task SendResponseAsync([NotNull] HttpResponse response);
 
-        Task SendResponseAsync(HttpResponse response);
-
+        [NotNull]
         string RemoteEndPoint { get; }
-        Method Method { get; }
-        string Target { get; }
-        string Version { get; }
-        IReadOnlyList<(string, string)> Headers { get; }
+        [NotNull]
+        HttpStream Stream { get; }
     }
 }

@@ -9,11 +9,12 @@ namespace Http2Sharp.Test
 {
     public sealed class HttpsTest : IDisposable
     {
-        private readonly HttpServer server = new HttpServer(new TestServer());
+        private readonly HttpServer server = new HttpServer();
 
         public HttpsTest()
         {
             server.AddListener(new HttpsListener(server, IPAddress.Loopback, 8081, new X509Certificate2("key.pfx")));
+            server.AddHandler(new GenericHttpHandler(new TestServer()));
             server.StartListen();
         }
 

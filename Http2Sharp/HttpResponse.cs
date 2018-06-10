@@ -82,16 +82,16 @@ namespace Http2Sharp
                 throw new ArgumentException("Must provide data if a mime type is provided");
             }
 
-            headers["DATE"] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            headers["date"] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
 
             if (mimeType != null)
             {
-                headers["CONTENT-TYPE"] = mimeType;
+                headers["content-type"] = mimeType;
             }
 
             if (dataStream != null)
             {
-                headers["CONTENT-LENGTH"] = dataStream.Length.ToString(CultureInfo.InvariantCulture);
+                headers["content-length"] = dataStream.Length.ToString(CultureInfo.InvariantCulture);
             }
             DataStream = dataStream;
             this.leaveStreamOpen = leaveStreamOpen;
@@ -176,7 +176,7 @@ namespace Http2Sharp
                 throw new ArgumentNullException(nameof(headerName));
             }
 
-            headers[headerName.ToUpperInvariant()] = headerValue;
+            headers[headerName.ToLowerInvariant()] = headerValue;
         }
     }
 }

@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 
 namespace Http2Sharp
@@ -27,7 +30,7 @@ namespace Http2Sharp
         }
 
         /// <inheritdoc />
-        protected override IHttpClient CreateClient(TcpClient client)
+        protected override async Task<HttpStream> CreateClientStreamAsync(TcpClient client)
         {
             if (client == null)
             {
@@ -35,8 +38,26 @@ namespace Http2Sharp
             }
 
             var stream = new SslStream(client.GetStream());
-            stream.AuthenticateAsServer(serverCertificate, false, SslProtocols.Tls12, true);
-            return new HttpClient(ServerConfiguration, client, stream);
+            var serverOptions = new SslServerAuthenticationOptions
+            {
+                AllowRenegotiation = true,
+                ServerCertificate = serverCertificate,
+                ClientCertificateRequired = false,
+                EnabledSslProtocols = SslProtocols.Tls12,
+                ApplicationProtocols = new List<SslApplicationProtocol>
+                {
+                    SslApplicationProtocol.Http2,
+                    SslApplicationProtocol.Http11,
+                },
+                CertificateRevocationCheckMode = X509RevocationMode.Offline,
+                EncryptionPolicy = EncryptionPolicy.RequireEncryption
+            };
+
+            await stream.AuthenticateAsServerAsync(serverOptions, CancellationToken.None).ConfigureAwait(false);
+            return new HttpStream(stream);
         }
+
+        /// <inheritdoc />
+        public override string Protocol => "https";
     }
 }

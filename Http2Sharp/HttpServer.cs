@@ -16,16 +16,11 @@ namespace Http2Sharp
 
         private bool listening;
         private readonly IList<IHttpListener> listeners = new List<IHttpListener>();
+        private readonly IList<IHttpHandler> handlers = new List<IHttpHandler>();
         private Task[] listenerTasks;
 
-        private readonly RouteManager routeManager;
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
         private TaskFactory taskFactory;
-
-        public HttpServer([NotNull] object baseRouter)
-        {
-            routeManager = new RouteManager(baseRouter);
-        }
 
         public void Dispose()
         {
@@ -44,6 +39,11 @@ namespace Http2Sharp
             }
 
             listeners.Add(listener);
+        }
+
+        public void AddHandler(IHttpHandler handler)
+        {
+            handlers.Add(handler);
         }
 
         public void StartListen()
@@ -70,40 +70,43 @@ namespace Http2Sharp
             Task.WaitAll(listenerTasks);
         }
 
-        private async Task ProcessClientAsync([NotNull] IHttpClient client)
+        private async Task ProcessClientAsync([NotNull] HttpRequest request)
         {
-            using (client)
+            try
             {
-                try
-                {
-                    await client.ReadHeadersAsync().ConfigureAwait(false);
-                    logger.Info(CultureInfo.CurrentCulture, "Message from {0} for {1} {2}", client.RemoteEndPoint, client.Method, client.Target);
+                logger.Info(CultureInfo.CurrentCulture, "Message from {0} for {1} {2}", request.Client.RemoteEndPoint, request.Method.ToString().ToUpperInvariant(), request.Target);
 
-                    var target = new Uri(client.Target, UriKind.Relative).MakeAbsolute();
-                    var request = new HttpRequest(client.Method, target, client.Headers);
-                    var method = routeManager.GetRoute(request);
-                    request.Body = await client.ReadBodyAsync().ConfigureAwait(false);
-                    using (var response = method.Invoke(request))
+                foreach (var handler in handlers)
+                {
+                    if (handler.CanHandle(request))
                     {
-                        await client.SendResponseAsync(response).ConfigureAwait(false);
+                        using (var response = handler.HandleRequest(request))
+                        {
+                            await request.Client.SendResponseAsync(response).ConfigureAwait(false);
+                        }
+
+                        return;
                     }
                 }
-                catch (HttpException e)
-                {
-                    await client.SendResponseAsync(HttpResponse.Status(e.StatusCode)).ConfigureAwait(false);
-                }
-                catch (TargetInvocationException e)
-                {
-                    logger.Error(e, CultureInfo.CurrentCulture, "Uncaught exception when running route handler");
-                    // TODO: Filter message when not in debug mode
-                    await client.SendResponseAsync(HttpResponse.Status(HttpStatusCode.InternalServerError, e.ToString())).ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    logger.Error(e, CultureInfo.CurrentCulture, "Uncaught exception when processing connection");
-                    await client.SendResponseAsync(HttpResponse.Status(HttpStatusCode.InternalServerError, e.ToString())).ConfigureAwait(false);
-                    throw;
-                }
+
+                await request.Client.SendResponseAsync(HttpResponse.Status(HttpStatusCode.BadRequest)).ConfigureAwait(false);
+            }
+            catch (HttpException e)
+            {
+                await request.Client.SendResponseAsync(HttpResponse.Status(e.StatusCode)).ConfigureAwait(false);
+            }
+            catch (TargetInvocationException e)
+            {
+                logger.Error(e, CultureInfo.CurrentCulture, "Uncaught exception when running route handler");
+                // TODO: Filter message when not in debug mode
+                await request.Client.SendResponseAsync(HttpResponse.Status(HttpStatusCode.InternalServerError, e.ToString())).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                logger.Error(e, CultureInfo.CurrentCulture, "Uncaught exception when processing connection");
+                // TODO: Filter message when not in debug mode
+                await request.Client.SendResponseAsync(HttpResponse.Status(HttpStatusCode.InternalServerError, e.ToString())).ConfigureAwait(false);
+                throw;
             }
         }
 

@@ -14,7 +14,7 @@ namespace Http2Sharp.Test
             var data = GenerateData(128);
             using (var stream = new MemoryStream(data))
             {
-                var reader = new HttpReader(stream);
+                var reader = new HttpStream(stream);
                 var result = new byte[128];
                 await reader.ReadAsync(result, 0, 128);
                 Assert.True(VerifyData(result));
@@ -27,7 +27,7 @@ namespace Http2Sharp.Test
             var data = GenerateData(2048);
             using (var stream = new MemoryStream(data))
             {
-                var reader = new HttpReader(stream);
+                var reader = new HttpStream(stream);
                 var result = new byte[2048];
                 await reader.ReadAsync(result, 0, 2048);
                 Assert.True(VerifyData(result));
@@ -40,7 +40,7 @@ namespace Http2Sharp.Test
             var data = GenerateLine(128);
             using (var stream = new MemoryStream(data))
             {
-                var reader = new HttpReader(stream);
+                var reader = new HttpStream(stream);
                 var result = await reader.ReadLineAsync();
                 Assert.Equal(126, result.Length);
                 Assert.True(VerifyData(result));
@@ -60,7 +60,7 @@ namespace Http2Sharp.Test
 
                 stream.Position = 0;
 
-                var reader = new HttpReader(stream);
+                var reader = new HttpStream(stream);
                 for (var i = 0; i < 100; i++)
                 {
                     var result = await reader.ReadLineAsync();
@@ -76,7 +76,7 @@ namespace Http2Sharp.Test
             var data = GenerateLine(2048);
             using (var stream = new MemoryStream(data))
             {
-                var reader = new HttpReader(stream);
+                var reader = new HttpStream(stream);
                 var result = await reader.ReadLineAsync();
                 Assert.Equal(2046, result.Length);
                 Assert.True(VerifyData(result));
@@ -89,7 +89,7 @@ namespace Http2Sharp.Test
             var data = GenerateLine(1025);
             using (var stream = new MemoryStream(data))
             {
-                var reader = new HttpReader(stream);
+                var reader = new HttpStream(stream);
                 var result = await reader.ReadLineAsync();
                 Assert.Equal(1023, result.Length);
                 Assert.True(VerifyData(result));
@@ -115,7 +115,7 @@ namespace Http2Sharp.Test
 
                 stream.Position = 0;
 
-                var reader = new HttpReader(stream);
+                var reader = new HttpStream(stream);
                 var resultData = new byte[128];
                 await reader.ReadAsync(resultData, 0, 128);
                 Assert.True(VerifyData(resultData));

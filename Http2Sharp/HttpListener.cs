@@ -28,7 +28,7 @@ namespace Http2Sharp
         }
 
         /// <inheritdoc />
-        public Task StartListenAsync([NotNull] TaskFactory taskFactory, [NotNull] Func<IHttpClient, Task> processClient)
+        public Task StartListenAsync([NotNull] TaskFactory taskFactory, [NotNull] Func<HttpRequest, Task> processClient)
         {
             if (taskFactory == null)
             {
@@ -53,8 +53,6 @@ namespace Http2Sharp
                     {
                         client = listener.AcceptTcpClient();
                         Logger.Info(CultureInfo.CurrentCulture, "Client connected to {0} from {1}", endPoint, client.Client.RemoteEndPoint);
-
-                        processClient(CreateClient(client));
                     }
                     catch (SocketException e)
                     {
@@ -66,23 +64,48 @@ namespace Http2Sharp
 
                         Logger.Error(e, CultureInfo.CurrentCulture, "Uncaught exception when processing connection");
                         client?.Dispose();
+                        continue;
                     }
                     catch (Exception e)
                     {
                         Logger.Error(e, CultureInfo.CurrentCulture, "Uncaught exception when processing connection");
                         client?.Dispose();
+                        continue;
                     }
+
+                    taskFactory.StartNew(async () =>
+                    {
+                        var httpStream = await CreateClientStreamAsync(client).ConfigureAwait(false);
+                        if (httpStream.ReadIsHttp2())
+                        {
+                            httpStream = new Http2Stream(httpStream);
+                        }
+
+                        using (httpStream)
+                        {
+                            var request = await HttpRequest.FromHttpClientAsync(Protocol, new HttpClient(ServerConfiguration, httpStream, client.Client.RemoteEndPoint)).ConfigureAwait(false);
+                            await processClient(request).ConfigureAwait(false);
+                        }
+                    });
                 }
             }, taskFactory.CancellationToken);
         }
 
-        [NotNull]
-        protected virtual IHttpClient CreateClient([NotNull] TcpClient client)
+        [ItemNotNull]
+        protected async virtual Task<HttpStream> CreateClientStreamAsync([NotNull] TcpClient client)
         {
-            return new HttpClient(ServerConfiguration, client);
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            return new HttpStream(client.GetStream());
         }
 
         [NotNull]
         public IServerConfiguration ServerConfiguration { get; }
+
+        [NotNull]
+        public virtual string Protocol => "http";
     }
 }

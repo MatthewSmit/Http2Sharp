@@ -20,6 +20,13 @@ namespace Http2Sharp.Test
         }
 
         [NotNull]
+        [Get("/echo2/{value}")]
+        public HttpResponse Echo2([Param] [NotNull] string value)
+        {
+            return HttpResponse.Send(value);
+        }
+
+        [NotNull]
         [Post("/post")]
         public HttpResponse Post([Body] [NotNull] User user)
         {

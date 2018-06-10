@@ -91,8 +91,12 @@ namespace Http2Sharp
                 builder.Append(path[i]);
                 if (path[i] == '}')
                 {
-                    throw new NotImplementedException();
+                    name = path.Substring(nameStart, i - nameStart);
+                    i++;
+                    regexBuilder.Append("(?<" + name + ">[^/]+)");
+                    return;
                 }
+
                 if (path[i] == ':')
                 {
                     name = path.Substring(nameStart, i - nameStart);

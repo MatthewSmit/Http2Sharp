@@ -12,11 +12,12 @@ namespace Http2Sharp.Test
     {
         private const string BASE_URL = "http://localhost:8080";
 
-        private readonly HttpServer server = new HttpServer(new TestServer());
+        private readonly HttpServer server = new HttpServer();
 
         public IntegrationTest()
         {
             server.AddListener(new HttpListener(server, IPAddress.Loopback, 8080));
+            server.AddHandler(new GenericHttpHandler(new TestServer()));
             server.StartListen();
         }
 
@@ -36,6 +37,13 @@ namespace Http2Sharp.Test
         public void TestGetEcho()
         {
             var result = SendRequest("GET", BASE_URL + "/echo?value=TEST");
+            Assert.Equal("TEST", result);
+        }
+
+        [Fact]
+        public void TestGetEcho2()
+        {
+            var result = SendRequest("GET", BASE_URL + "/echo2/TEST");
             Assert.Equal("TEST", result);
         }
 
