@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Http2Sharp.Test
+namespace Http2Sharp
 {
     public sealed class User
     {

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Xunit;
 
-namespace Http2Sharp.Test
+namespace Http2Sharp
 {
     public sealed class HttpReaderTest
     {

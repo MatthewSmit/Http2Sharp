@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 
-namespace Http2Sharp.Test
+namespace Http2Sharp
 {
     [Router]
     internal sealed class TestServer

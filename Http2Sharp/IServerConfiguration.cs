@@ -4,7 +4,6 @@ namespace Http2Sharp
 {
     public interface IServerConfiguration
     {
-        [NotNull]
-        string ServerName { get; }
+        void AddServerHeaders([NotNull] HttpResponse response);
     }
 }

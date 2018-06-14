@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using Newtonsoft.Json;
 using Xunit;
 
-namespace Http2Sharp.Test
+namespace Http2Sharp
 {
     public sealed class IntegrationTest : IDisposable
     {

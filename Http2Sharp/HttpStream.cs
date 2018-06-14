@@ -4,6 +4,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Http2Sharp.Http2;
 using JetBrains.Annotations;
 
 namespace Http2Sharp
@@ -97,7 +98,7 @@ namespace Http2Sharp
         /// <inheritdoc />
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new NotImplementedException();
+            stream.Write(buffer, offset, count);
         }
 
         /// <inheritdoc />
@@ -113,7 +114,7 @@ namespace Http2Sharp
                 throw new InvalidOperationException("Can only check for HTTP/2 as the first operation.");
             }
 
-            var http2Header = Http2Stream.Http2Header;
+            var http2Header = Http2Manager.Http2Header;
 
             EnsureBlock();
             if (blockSize < http2Header.Count)
@@ -133,7 +134,7 @@ namespace Http2Sharp
             return true;
         }
 
-        public string ReadLine()
+        public virtual string ReadLine()
         {
             var result = new StringBuilder();
             while (true)
@@ -170,7 +171,7 @@ namespace Http2Sharp
             }
         }
 
-        public async Task<string> ReadLineAsync()
+        public virtual async Task<string> ReadLineAsync()
         {
             var result = new StringBuilder();
             while (true)
@@ -207,7 +208,7 @@ namespace Http2Sharp
             }
         }
 
-        protected virtual void EnsureBlock()
+        private void EnsureBlock()
         {
             if (blockPointer >= blockSize)
             {
@@ -220,7 +221,7 @@ namespace Http2Sharp
             }
         }
 
-        protected virtual async Task EnsureBlockAsync(CancellationToken cancellationToken)
+        private async Task EnsureBlockAsync(CancellationToken cancellationToken)
         {
             if (blockPointer >= blockSize)
             {

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.IO;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -29,10 +30,7 @@ namespace Http2Sharp
         /// <inheritdoc />
         public async Task SendResponseAsync(HttpResponse response)
         {
-            if (!response.ContainsHeader("server"))
-            {
-                response.AddHeader("server", serverConfiguration.ServerName);
-            }
+            serverConfiguration.AddServerHeaders(response);
 
             var result = new StringBuilder();
             result.Append(HTTP_VERSION + " " + (int)response.StatusCode + " " + response.StatusCodeReason + "\r\n");
@@ -56,6 +54,9 @@ namespace Http2Sharp
         public string RemoteEndPoint => remoteEndPoint.ToString();
 
         /// <inheritdoc />
-        public HttpStream Stream => httpStream;
+        public Stream Stream => httpStream;
+
+        /// <inheritdoc />
+        public HttpStream HttpStream => httpStream;
     }
 }

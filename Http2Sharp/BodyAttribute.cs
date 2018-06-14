@@ -28,6 +28,15 @@ namespace Http2Sharp
                     return request.GetBodyStream();
                 }
 
+                if (ParameterType == typeof(byte[]))
+                {
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        request.GetBodyStream().CopyTo(memoryStream);
+                        return memoryStream.ToArray();
+                    }
+                }
+
                 if (request.ContentType != null)
                 {
                     if (request.ContentType.StartsWith("text/", StringComparison.InvariantCulture))

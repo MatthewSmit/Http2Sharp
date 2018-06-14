@@ -110,7 +110,21 @@ namespace Http2Sharp
             }
         }
 
-        /// <inheritdoc />
+        [NotNull]
         public string ServerName => "HTTP2#/0.1";
+
+        /// <inheritdoc />
+        public void AddServerHeaders(HttpResponse response)
+        {
+            if (response == null)
+            {
+                throw new ArgumentNullException(nameof(response));
+            }
+
+            if (!response.ContainsHeader("server"))
+            {
+                response.AddHeader("server", ServerName);
+            }
+        }
     }
 }

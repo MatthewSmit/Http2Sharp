@@ -28,7 +28,7 @@ namespace Http2Sharp
         private static readonly Regex requestLineRegex = new Regex($"^{METHOD} {REQUEST_TARGET} {HTTP_VERSION_REGEX}$");
         private static readonly Regex headerLineRegex = new Regex($@"^(?<name>{FIELD_NAME}):\s*(?<value>{FIELD_VALUE})\s*$");
 
-        private HttpRequest(IHttpClient client, string protocol, Method method, [NotNull] string target, [NotNull] string version, [NotNull] IReadOnlyList<(string, string)> headers)
+        public HttpRequest(IHttpClient client, string protocol, Method method, [NotNull] string target, [NotNull] string version, [NotNull] IReadOnlyList<(string, string)> headers)
         {
             Client = client;
             Method = method;
@@ -77,7 +77,7 @@ namespace Http2Sharp
                 throw new ArgumentNullException(nameof(client));
             }
 
-            var stream = client.Stream;
+            var stream = client.HttpStream;
             var startLine = await stream.ReadLineAsync().ConfigureAwait(false);
             var startLineMatch = requestLineRegex.Match(startLine);
 
@@ -118,7 +118,7 @@ namespace Http2Sharp
             }
         }
 
-        private static Method ParseMethod([NotNull] string value)
+        public static Method ParseMethod([NotNull] string value)
         {
             switch (value)
             {
@@ -153,10 +153,8 @@ namespace Http2Sharp
                 var contentLength = ContentLength.ValueOrFailure();
                 return new LimitedStream(Client.Stream, contentLength);
             }
-            else
-            {
-                throw new NotImplementedException();
-            }
+
+            return Client.Stream;
         }
 
         public Method Method { get; }

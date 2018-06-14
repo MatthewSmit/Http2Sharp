@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Http2Sharp.Http2;
 using JetBrains.Annotations;
 using NLog;
 
@@ -78,13 +79,21 @@ namespace Http2Sharp
                         var httpStream = await CreateClientStreamAsync(client).ConfigureAwait(false);
                         if (httpStream.ReadIsHttp2())
                         {
-                            httpStream = new Http2Stream(httpStream);
+                            using (var http2Manager = new Http2Manager(ServerConfiguration, client.Client.RemoteEndPoint.ToString(), taskFactory, httpStream, processClient))
+                            {
+                                while (http2Manager.Running)
+                                {
+                                    http2Manager.ProcessFrame();
+                                }
+                            }
                         }
-
-                        using (httpStream)
+                        else
                         {
-                            var request = await HttpRequest.FromHttpClientAsync(Protocol, new HttpClient(ServerConfiguration, httpStream, client.Client.RemoteEndPoint)).ConfigureAwait(false);
-                            await processClient(request).ConfigureAwait(false);
+                            using (httpStream)
+                            {
+                                var request = await HttpRequest.FromHttpClientAsync(Protocol, new HttpClient(ServerConfiguration, httpStream, client.Client.RemoteEndPoint)).ConfigureAwait(false);
+                                await processClient(request).ConfigureAwait(false);
+                            }
                         }
                     });
                 }

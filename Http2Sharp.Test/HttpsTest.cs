@@ -5,7 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 using JetBrains.Annotations;
 using Xunit;
 
-namespace Http2Sharp.Test
+namespace Http2Sharp
 {
     public sealed class HttpsTest : IDisposable
     {

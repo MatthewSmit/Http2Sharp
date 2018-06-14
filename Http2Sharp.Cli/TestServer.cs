@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using Http2Sharp.Test;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 
@@ -23,6 +22,13 @@ namespace Http2Sharp.Cli
         public HttpResponse MainPage()
         {
             return HttpResponse.Send("Hello World");
+        }
+
+        [NotNull]
+        [Post("/")]
+        public HttpResponse PostMain([Body] byte[] data)
+        {
+            return HttpResponse.Status(HttpStatusCode.OK);
         }
 
         [NotNull]

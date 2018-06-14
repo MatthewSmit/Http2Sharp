@@ -1,4 +1,4 @@
-﻿namespace Http2Sharp.Test
+﻿namespace Http2Sharp
 {
     public enum Gender
     {
